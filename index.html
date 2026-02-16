@@ -1,13 +1,566 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pescasmart-capacitor</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PescaSmart Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #001233;
+      --text: #e0f2ff;
+      --card: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.12);
+    }
+    [data-theme="light"] {
+      --bg: #f0f9ff;
+      --text: #001233;
+      --card: rgba(0,0,0,0.05);
+      --border: rgba(0,0,0,0.1);
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.5s, color 0.5s;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .page {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      overflow-y: auto;
+      padding: clamp(1rem, 5vw, 2rem) clamp(1rem, 5vw, 2rem) clamp(120px, 25vw, 160px);
+    }
+    .page.active { opacity: 1; z-index: 10; }
+    .nav-item {
+      transition: all 0.3s;
+      color: #88ccff;
+    }
+    .nav-item.active {
+      color: #00f0ff !important;
+      text-shadow: 0 0 15px #00f0ff;
+      transform: scale(1.15);
+    }
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      margin: 0 auto;
+      max-width: min(92vw, 800px);
+      padding: clamp(1.25rem, 4vw, 2rem);
+    }
+    button, input, select, textarea {
+      font-size: clamp(1rem, 4.5vw, 1.125rem);
+      padding: clamp(0.75rem, 4vw, 1.25rem);
+      border-radius: 1rem;
+      min-height: 48px;
+    }
+    h1 { font-size: clamp(1.8rem, 9vw, 2.8rem); line-height: 1.1; }
+    h2 { font-size: clamp(1.4rem, 6vw, 2rem); }
+    img, video { max-width: 100%; height: auto; display: block; margin: 1rem auto; border-radius: 1rem; object-fit: contain; max-height: 50vh; }
+    .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+    @media (min-width: 768px) {
+      .card { max-width: 800px; padding: 2.5rem; }
+      .nav-item { font-size: 2.8rem; }
+      .page { padding: 2rem 3rem clamp(120px, 20vh, 160px); }
+      .data-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    }
+    @media (min-width: 1024px) {
+      .card { max-width: 900px; }
+    }
+  </style>
+</head>
+<body class="min-h-screen relative" data-theme="dark">
+
+  <!-- Toggle Tema -->
+  <div class="fixed top-4 right-4 z-50 sm:top-6 sm:right-6">
+    <button onclick="toggleTheme()" class="bg-white/20 backdrop-blur-lg px-4 py-2 sm:px-5 sm:py-3 rounded-full text-sm sm:text-base font-medium border border-white/30 hover:bg-white/30 transition">
+      <span id="theme-text">Tema Chiaro</span>
+    </button>
+  </div>
+
+  <!-- Pagine -->
+  <div id="log-page" class="page active">
+    <div class="pt-16 pb-32 px-4 sm:px-8">
+      <h1 class="text-center mb-8">📋 Il Tuo Log</h1>
+      <div id="log" class="space-y-6"></div>
+    </div>
+  </div>
+
+  <div id="capture-page" class="page">
+    <div class="pt-16 pb-32 px-4 sm:px-8">
+      <h1 class="text-center mb-8">🎣 Nuova Cattura</h1>
+      <div class="card p-6 sm:p-10">
+        <button onclick="startCamera()" class="w-full bg-gradient-to-r from-cyan-500 to-teal-500 text-black font-bold py-6 rounded-3xl text-xl sm:text-2xl shadow-2xl active:scale-95 mb-8">
+          📸 SCATTA FOTO PESCE
+        </button>
+        <video id="video" class="w-full rounded-3xl hidden border-4 border-cyan-600/40 mb-6"></video>
+        <img id="photo" class="w-full rounded-3xl hidden border-4 border-cyan-600/40 mb-6">
+        <div id="input" class="space-y-5"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="stats-page" class="page">
+    <div class="pt-16 pb-32 px-4 sm:px-8">
+      <h1 class="text-center mb-8">📊 Statistiche</h1>
+      <div id="stats" class="card p-6 sm:p-10 space-y-6"></div>
+    </div>
+  </div>
+
+  <div id="prev-page" class="page">
+    <div class="pt-16 pb-32 px-4 sm:px-8">
+      <h1 class="text-center mb-8">🌊 Previsioni Bite</h1>
+      <div class="card p-6 sm:p-10 space-y-6">
+        <button onclick="getPrevisioni()" class="w-full bg-gradient-to-r from-cyan-500 to-teal-500 text-black font-bold py-5 rounded-2xl text-xl shadow-xl active:scale-95">
+          Aggiorna Previsioni
+        </button>
+        <div id="prev-content" class="text-center space-y-6"></div>
+        <button onclick="promptManualPosition()" class="mt-4 text-cyan-300 underline text-sm">
+          Cambia posizione manuale (se zona interna)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-blue-950/95 to-transparent pt-3 pb-4 sm:pb-6 backdrop-blur-2xl border-t border-cyan-800/40 z-50" style="padding-bottom: env(safe-area-inset-bottom)">
+    <div class="flex justify-around max-w-screen-sm mx-auto">
+      <div onclick="switchPage('log-page', this)" class="nav-item active flex flex-col items-center text-3xl sm:text-4xl cursor-pointer">
+        📋<span class="text-xs mt-1 font-semibold">Log</span>
+      </div>
+      <div onclick="switchPage('capture-page', this)" class="nav-item flex flex-col items-center text-3xl sm:text-4xl cursor-pointer">
+        🎣<span class="text-xs mt-1 font-semibold">Cattura</span>
+      </div>
+      <div onclick="switchPage('stats-page', this); showStats()" class="nav-item flex flex-col items-center text-3xl sm:text-4xl cursor-pointer">
+        📊<span class="text-xs mt-1 font-semibold">Stats</span>
+      </div>
+      <div onclick="switchPage('prev-page', this); getPrevisioni()" class="nav-item flex flex-col items-center text-3xl sm:text-4xl cursor-pointer">
+        🌊<span class="text-xs mt-1 font-semibold">Bite</span>
+      </div>
+    </div>
+  </nav>
+
+  <script>
+    let currentPhoto = null;
+    const video = document.getElementById('video');
+    const canvas = document.createElement('canvas');
+
+    // Database mini spiagge italiane (lat, lon, nome) – espandi se vuoi
+    const beaches = [
+      { name: "Genova - Boccadasse", lat: 44.407, lon: 8.934 },
+      { name: "Roma - Ostia", lat: 41.737, lon: 12.280 },
+      { name: "Napoli - Posillipo", lat: 40.790, lon: 14.190 },
+      { name: "Bari - Pane e Pomodoro", lat: 41.122, lon: 16.899 },
+      { name: "Palermo - Mondello", lat: 38.207, lon: 13.325 },
+      { name: "Cagliari - Poetto", lat: 39.226, lon: 9.188 },
+      { name: "Rimini - Marina Centro", lat: 44.063, lon: 12.564 },
+      { name: "Pisa - Marina di Pisa", lat: 43.678, lon: 10.267 },
+      { name: "Venezia - Lido", lat: 45.417, lon: 12.372 },
+      { name: "Trieste - Barcola", lat: 45.696, lon: 13.747 }
+    ];
+
+    // Funzione distanza Haversine (km)
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // raggio Terra
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // Trova spiaggia più vicina
+    function findNearestBeach(lat, lon) {
+      let closest = null;
+      let minDist = Infinity;
+      beaches.forEach(b => {
+        const dist = getDistance(lat, lon, b.lat, b.lon);
+        if (dist < minDist) {
+          minDist = dist;
+          closest = b;
+        }
+      });
+      return minDist < 50 ? closest : null; // entro 50km
+    }
+
+    function switchPage(pageId, el) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme') || 'dark';
+      const newTheme = current === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      document.getElementById('theme-text').textContent = newTheme === 'light' ? 'Tema Scuro' : 'Tema Chiaro';
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-text').textContent = savedTheme === 'light' ? 'Tema Scuro' : 'Tema Chiaro';
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        video.classList.remove('hidden');
+        video.play();
+      } catch (err) {
+        alert("Permesso camera negato o errore: " + err.message);
+      }
+    }
+
+    video.onclick = () => {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      currentPhoto = canvas.toDataURL('image/jpeg');
+      document.getElementById('photo').src = currentPhoto;
+      document.getElementById('photo').classList.remove('hidden');
+      video.srcObject.getTracks().forEach(t => t.stop());
+      video.classList.add('hidden');
+
+      document.getElementById('input').innerHTML = `
+        <select id="specie" class="w-full bg-gray-800/70 p-5 rounded-2xl border border-cyan-700 text-white text-lg">
+          <option>Dentice</option><option>Spigola</option><option>Orata</option><option>Sarago</option><option>Triglia</option><option>Altri</option>
+        </select>
+        <input id="lung" type="number" placeholder="Lunghezza cm" class="w-full bg-gray-800/70 p-5 rounded-2xl border border-cyan-700 text-white text-lg mt-4">
+        <input id="peso" type="number" placeholder="Peso kg (opzionale)" class="w-full bg-gray-800/70 p-5 rounded-2xl border border-cyan-700 text-white text-lg mt-4">
+        <input id="esca" placeholder="Esca usata" class="w-full bg-gray-800/70 p-5 rounded-2xl border border-cyan-700 text-white text-lg mt-4">
+        <textarea id="note" placeholder="Note, spot, condizioni..." class="w-full bg-gray-800/70 p-5 rounded-2xl border border-cyan-700 text-white text-lg mt-4 h-32"></textarea>
+        <label class="flex items-center gap-3 mt-4 text-lg">
+          <input type="checkbox" id="release" class="w-6 h-6 accent-teal-400"> Rilasciato
+        </label>
+        <button onclick="salvaCattura()" class="w-full bg-gradient-to-r from-lime-500 to-teal-500 text-black font-bold py-6 rounded-3xl text-xl mt-8 shadow-2xl active:scale-95">
+          💾 SALVA CATTURA
+        </button>
+      `;
+    };
+
+    function salvaCattura() {
+      const entry = {
+        date: new Date().toLocaleString('it-IT'),
+        specie: document.getElementById('specie').value,
+        lung: parseFloat(document.getElementById('lung').value) || 0,
+        peso: parseFloat(document.getElementById('peso').value) || 0,
+        esca: document.getElementById('esca').value || '-',
+        note: document.getElementById('note').value || '',
+        release: document.getElementById('release').checked,
+        photo: currentPhoto
+      };
+
+      let log = JSON.parse(localStorage.getItem('pescaLog') || '[]');
+      log.push(entry);
+      localStorage.setItem('pescaLog', JSON.stringify(log));
+
+      document.getElementById('input').innerHTML = '<p class="text-3xl text-lime-400 text-center font-bold mt-12">Salvata! 🔥 Torna al Log</p>';
+      loadLog();
+      showStats();
+    }
+
+    function loadLog() {
+      let log = JSON.parse(localStorage.getItem('pescaLog') || '[]');
+      const container = document.getElementById('log');
+      container.innerHTML = log.length === 0 ?
+        '<p class="text-center opacity-70 py-20 text-2xl">Nessuna cattura salvata.<br>Vai a pescare! 🚤</p>' :
+        log.map((e, i) => `
+          <div class="bg-white/5 p-6 rounded-3xl border border-cyan-800/30 relative">
+            <button onclick="deleteEntry(${i})" class="absolute top-3 right-3 text-red-400 hover:text-red-300 text-2xl font-bold">✕</button>
+            <div class="flex justify-between items-start mb-3">
+              <span class="text-xl font-bold">${e.specie}</span>
+              <span class="text-lg ${e.release ? 'text-lime-400' : 'text-red-400'} font-semibold">${e.release ? 'Rilasciato' : 'Tenuto'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm opacity-90 mb-4">
+              <div><strong>Data:</strong> ${e.date}</div>
+              <div><strong>Lunghezza:</strong> ${e.lung} cm</div>
+              <div><strong>Peso:</strong> ${e.peso || '-'} kg</div>
+              <div><strong>Esca:</strong> ${e.esca}</div>
+            </div>
+            ${e.note ? `<p class="text-sm opacity-80 mb-3">Note: ${e.note}</p>` : ''}
+            ${e.photo ? `<img src="${e.photo}" class="w-full rounded-2xl mt-2">` : ''}
+          </div>
+        `).join('');
+    }
+
+    function deleteEntry(index) {
+      if (confirm("Elimino questa cattura?")) {
+        let log = JSON.parse(localStorage.getItem('pescaLog') || '[]');
+        log.splice(index, 1);
+        localStorage.setItem('pescaLog', JSON.stringify(log));
+        loadLog();
+        showStats();
+      }
+    }
+
+    function showStats() {
+      let log = JSON.parse(localStorage.getItem('pescaLog') || '[]');
+      const container = document.getElementById('stats');
+      if (log.length === 0) {
+        container.innerHTML = '<p class="text-center opacity-70 py-20 text-2xl">Aggiungi catture per vedere le statistiche 🔥</p>';
+        return;
+      }
+
+      let count = {}, totalLung = {}, totalPeso = {}, releaseCount = 0, trofei = 0;
+      log.forEach(e => {
+        count[e.specie] = (count[e.specie] || 0) + 1;
+        totalLung[e.specie] = (totalLung[e.specie] || 0) + e.lung;
+        totalPeso[e.specie] = (totalPeso[e.specie] || 0) + e.peso;
+        if (e.release) releaseCount++;
+        if (e.lung > 50) trofei++;
+      });
+
+      let html = `
+        <div class="grid grid-cols-2 gap-6 text-center mb-8">
+          <div class="bg-cyan-900/30 p-6 rounded-2xl">
+            <div class="text-5xl font-black">${log.length}</div>
+            <div class="text-lg mt-2">Catture totali</div>
+          </div>
+          <div class="bg-green-900/30 p-6 rounded-2xl">
+            <div class="text-5xl font-black">${releaseCount}</div>
+            <div class="text-lg mt-2">% Rilasciate</div>
+          </div>
+        </div>
+        <div class="bg-white/5 p-6 rounded-2xl mb-6 text-center">
+          <div class="text-3xl font-bold mb-4">Trofei >50 cm</div>
+          <div class="text-6xl font-black text-yellow-300">${trofei}</div>
+        </div>
+      `;
+
+      html += '<div class="space-y-4">';
+      for (let s in count) {
+        html += `
+          <div class="bg-white/5 p-5 rounded-2xl">
+            <div class="flex justify-between text-xl font-bold mb-2">
+              <span>${s}</span>
+              <span class="text-cyan-300">${count[s]}x</span>
+            </div>
+            <div class="text-sm opacity-80">
+              Media lunghezza: ${(totalLung[s]/count[s]).toFixed(1)} cm<br>
+              Peso totale: ${totalPeso[s].toFixed(1)} kg
+            </div>
+          </div>
+        `;
+      }
+      html += '</div>';
+
+      container.innerHTML = html;
+    }
+
+    async function getPrevisioni() {
+      const content = document.getElementById('prev-content');
+      content.innerHTML = '<p class="text-xl animate-pulse text-center py-10">Caricamento dati pesca completi...</p>';
+
+      let lat = 44.407; // fallback Genova porto
+      let lon = 8.934;
+      let dataSource = "Meteo mare";
+
+      try {
+        const savedPos = localStorage.getItem('lastPosition');
+        if (savedPos) {
+          const pos = JSON.parse(savedPos);
+          lat = Number(pos.lat);
+          lon = Number(pos.lon);
+        } else {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000 });
+          });
+          lat = Number(pos.coords.latitude);
+          lon = Number(pos.coords.longitude);
+          localStorage.setItem('lastPosition', JSON.stringify({lat, lon}));
+        }
+
+        if (isNaN(lat) || isNaN(lon)) throw new Error("Posizione non valida");
+
+        // Prova Marine API
+        let marineData, weatherData;
+        try {
+          const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wind_speed_10m,wind_direction_10m,sea_surface_temperature`;
+          marineRes = await fetch(marineUrl);
+          marineData = await marineRes.json();
+        } catch (e) {
+          console.log("Marine API fallita", e);
+        }
+
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,pressure_msl,cloud_cover,precipitation,air_temperature_2m`;
+        const weatherRes = await fetch(weatherUrl);
+        weatherData = await weatherRes.json();
+
+        let wave = 0, windSpeed = 0, windDir = 0, pressure = 0, cloud = 0, precip = 0, tempAir = 0, tempWater = 0;
+
+        // Se Marine OK, usa quello
+        if (marineData && marineData.hourly && marineData.hourly.time.length > 0) {
+          const todayIndex = marineData.hourly.time.findIndex(t => new Date(t).getDate() === new Date().getDate());
+          if (todayIndex !== -1) {
+            wave = marineData.hourly.wave_height.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            windSpeed = marineData.hourly.wind_speed_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            windDir = marineData.hourly.wind_direction_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            tempWater = marineData.hourly.sea_surface_temperature.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+          }
+        } else {
+          // Fallback: cerca spiaggia più vicina
+          const nearestBeach = findNearestBeach(lat, lon);
+          if (nearestBeach) {
+            lat = nearestBeach.lat;
+            lon = nearestBeach.lon;
+            dataSource = `Zona interna – usato spiaggia vicina: ${nearestBeach.name}`;
+            // Riprova Marine con spiaggia
+            const newMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&hourly=wave_height,wind_speed_10m,wind_direction_10m,sea_surface_temperature`;
+            const newMarineRes = await fetch(newMarineUrl);
+            marineData = await newMarineRes.json();
+            if (marineData.hourly && marineData.hourly.time.length > 0) {
+              const todayIndex = marineData.hourly.time.findIndex(t => new Date(t).getDate() === new Date().getDate());
+              if (todayIndex !== -1) {
+                wave = marineData.hourly.wave_height.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+                windSpeed = marineData.hourly.wind_speed_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+                windDir = marineData.hourly.wind_direction_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+                tempWater = marineData.hourly.sea_surface_temperature.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+              }
+            }
+          } else {
+            dataSource = "Zona interna – solo meteo terra";
+          }
+        }
+
+        // Weather sempre come backup
+        if (weatherData.hourly && weatherData.hourly.time.length > 0) {
+          const todayIndex = weatherData.hourly.time.findIndex(t => new Date(t).getDate() === new Date().getDate());
+          if (todayIndex !== -1) {
+            windSpeed = weatherData.hourly.wind_speed_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || windSpeed;
+            windDir = weatherData.hourly.wind_direction_10m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || windDir;
+            pressure = weatherData.hourly.pressure_msl.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            cloud = weatherData.hourly.cloud_cover.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            precip = weatherData.hourly.precipitation.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+            tempAir = weatherData.hourly.air_temperature_2m.slice(todayIndex, todayIndex+24).reduce((a,b)=>a+b,0) / 24 || 0;
+          }
+        }
+
+        let score = 75;
+        if (wave > 1.8) score -= 30;
+        if (wave < 0.6) score -= 15;
+        if (windSpeed > 25 || windSpeed < 6) score -= 25;
+        if (windSpeed > 10 && windSpeed < 18) score += 25;
+        if (windDir > 180 && windDir < 360) score += 10;
+        if (pressure > 1020) score += 5;
+        if (precip > 2) score -= 15;
+
+        score = Math.max(20, Math.min(98, Math.round(score)));
+
+        const moon = getMoonPhase();
+
+        content.innerHTML = `
+          <div class="text-center">
+            <div class="text-8xl font-black text-cyan-300 mb-4">${score}%</div>
+            <div class="text-3xl font-bold mb-6">Probabilità bite oggi</div>
+
+            <div class="data-grid mb-8">
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Onde<br><strong>${wave.toFixed(1)} m</strong>
+              </div>
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Vento<br><strong>${Math.round(windSpeed)} km/h • ${Math.round(windDir)}°</strong>
+              </div>
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Pressione<br><strong>${Math.round(pressure)} hPa</strong>
+              </div>
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Nuvolosità<br><strong>${Math.round(cloud)}%</strong>
+              </div>
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Pioggia<br><strong>${precip.toFixed(1)} mm</strong>
+              </div>
+              <div class="bg-white/10 p-6 rounded-2xl">
+                Temp Aria / Acqua<br><strong>${Math.round(tempAir)}°C / ${Math.round(tempWater)}°C</strong>
+              </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-white/20">
+              <div class="text-6xl mb-3">${moon.emoji}</div>
+              <div class="text-2xl font-bold">${moon.name}</div>
+              <div class="text-xl opacity-90 mt-2">Illuminazione: ${moon.illumination}%</div>
+              <div class="text-lg mt-3">Prossima Luna Piena: tra circa ${moon.daysToFull} giorni</div>
+            </div>
+
+            <p class="mt-8 text-xl opacity-90 font-medium leading-relaxed">
+              ${score > 80 ? 'Giornata EPICA! Vento perfetto, onde ok – vai di traina o spinning' :
+                score > 60 ? 'Buona probabilità – vento gestibile, meglio al mattino o sera' :
+                'Oggi si soffre... vento troppo forte/calmo o onde alte – spot riparati o cambia zona'}
+            </p>
+
+            <p class="mt-6 text-sm opacity-70">
+              ${dataSource} • Posizione: ${lat.toFixed(4)}, ${lon.toFixed(4)} • Ultimo update: ${new Date().toLocaleTimeString()}
+            </p>
+          </div>
+        `;
+
+        localStorage.setItem('lastMeteo', JSON.stringify({score, wave, windSpeed, windDir, moon, date: new Date().toLocaleString()}));
+
+      } catch (err) {
+        const cached = localStorage.getItem('lastMeteo');
+        if (cached) {
+          const c = JSON.parse(cached);
+          content.innerHTML = `
+            <p class="text-yellow-300 text-xl text-center py-6">Offline – ultima previsione (${c.date})</p>
+            <div class="text-7xl font-black text-cyan-300 mb-4">${c.score}%</div>
+            <div class="grid grid-cols-3 gap-5 text-lg">
+              <div>Onde: <strong>${c.wave.toFixed(1)} m</strong></div>
+              <div>Vento: <strong>${Math.round(c.windSpeed)} km/h</strong></div>
+              <div>Luna: <strong>${c.moon.emoji} ${c.moon.name}</strong></div>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `
+            <p class="text-red-400 text-xl text-center py-10">
+              Errore: ${err.message}<br>
+              Controlla connessione o GPS attivo.<br>
+              (Prova a spegnere/accendere posizione o riprova)
+            </p>
+          `;
+        }
+      }
+    }
+
+    function getMoonPhase(date = new Date()) {
+      const knownNewMoon = new Date('2000-01-06T18:14:00Z').getTime();
+      const synodicMonth = 29.530588853 * 86400000;
+      const daysSince = (date.getTime() - knownNewMoon) / 86400000;
+      const phase = (daysSince % 29.530588853) / 29.530588853;
+      const illumination = Math.round(Math.abs(Math.sin(phase * Math.PI * 2)) * 100);
+
+      let name = '', emoji = '🌑';
+      if (phase < 0.03 || phase > 0.97) { name = 'Luna Nuova'; emoji = '🌑'; }
+      else if (phase < 0.22) { name = 'Crescente'; emoji = '🌒'; }
+      else if (phase < 0.28) { name = 'Primo Quarto'; emoji = '🌓'; }
+      else if (phase < 0.47) { name = 'Gibbosa Crescente'; emoji = '🌔'; }
+      else if (phase < 0.53) { name = 'Luna Piena'; emoji = '🌕'; }
+      else if (phase < 0.72) { name = 'Gibbosa Calante'; emoji = '🌖'; }
+      else if (phase < 0.78) { name = 'Ultimo Quarto'; emoji = '🌗'; }
+      else { name = 'Calante'; emoji = '🌘'; }
+
+      const nextFull = new Date(knownNewMoon + Math.ceil(daysSince / 29.530588853 + 0.5) * synodicMonth);
+      const daysToFull = Math.ceil((nextFull - date) / 86400000);
+
+      return { name, emoji, illumination, daysToFull };
+    }
+
+    // Init
+    loadLog();
+    showStats();
+    getPrevisioni();
+  </script>
+</body>
 </html>
+
