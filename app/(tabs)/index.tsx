@@ -1,98 +1,90 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { Calendar } from 'react-native-calendars';
+import { ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import FishingForecast from '@/components/FishingForecast';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const dateStr = selectedDate.toISOString().split('T')[0];
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  return (
+    <LinearGradient colors={['#0a0f1c', '#1e3a8a']} style={{ flex: 1 }}>
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Titolo chiaro e grande */}
+        <View style={{ alignItems: 'center', marginTop: 20, marginBottom: 30 }}>
+          <Text style={{ fontSize: 36, fontWeight: '900', color: '#fff', textAlign: 'center' }}>
+            PESCA SMART
+          </Text>
+          <Text style={{ fontSize: 19, color: '#bae6fd', marginTop: 8 }}>
+            La tua app per pescare meglio
+          </Text>
+        </View>
+
+        {/* Calendario con spiegazione grande */}
+        <View style={{
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          borderRadius: 22,
+          padding: 16,
+          borderWidth: 1,
+          borderColor: 'rgba(103,232,249,0.3)',
+          marginBottom: 30,
+        }}>
+          <Text style={{ 
+            fontSize: 24, 
+            fontWeight: 'bold', 
+            color: '#fff', 
+            textAlign: 'center',
+            marginBottom: 12 
+          }}>
+            📅 Scegli il giorno in cui vuoi andare a pescare
+          </Text>
+
+          <Calendar
+            onDayPress={day => setSelectedDate(new Date(day.timestamp))}
+            markedDates={{ [dateStr]: { selected: true, selectedColor: '#67e8f9' } }}
+            theme={{
+              backgroundColor: 'transparent',
+              calendarBackground: 'transparent',
+              textSectionTitleColor: '#bae6fd',
+              selectedDayBackgroundColor: '#67e8f9',
+              selectedDayTextColor: '#0f172a',
+              todayTextColor: '#facc15',
+              dayTextColor: '#e0f2fe',
+              arrowColor: '#67e8f9',
+              monthTextColor: '#fff',
+            }}
+          />
+        </View>
+
+        {/* Spiegazione chiara per la posizione */}
+        <View style={{
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          padding: 18,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: '#67e8f9',
+          marginBottom: 20,
+        }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 8 }}>
+            📍 La tua posizione attuale
+          </Text>
+          <Text style={{ fontSize: 18, color: '#bae6fd' }}>
+            Stai visualizzando le previsioni vicino a dove ti trovi ora.
+          </Text>
+          <Text style={{ fontSize: 17, color: '#94a3b8', marginTop: 6 }}>
+            (Le previsioni si aggiornano automaticamente con la tua posizione)
+          </Text>
+        </View>
+
+        {/* Previsioni */}
+        <FishingForecast date={selectedDate} />
+
+      </ScrollView>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

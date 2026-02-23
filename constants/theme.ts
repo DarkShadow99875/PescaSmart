@@ -1,53 +1,60 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Tema PescaSmart - Versione FUOCHI D'ARTIFICIO 2026
+ * Dark mode principale, colori da app premium di pesca
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#22d3ee';     // Cyan elettrico (acqua)
+const tintColorDark = '#67e8f9';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: '#0f172a',
+    background: '#f8fafc',
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    icon: '#64748b',
+    tabIconDefault: '#64748b',
+    tabIconSelected: '#0ea5e9',
+    card: '#ffffff',
+    border: '#e2e8f0',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#f1f5f9',
+    background: '#0f172a',           // Blu notte profondo (il più bello)
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    icon: '#94a3b8',
+    tabIconDefault: '#94a3b8',
+    tabIconSelected: '#67e8f9',
+    
+    // Nuovi colori per le card premium
+    card: 'rgba(30, 58, 95, 0.85)',   // Blu vetro
+    cardBorder: 'rgba(103, 232, 249, 0.3)',
+    success: '#22c55e',               // Verde top pesca
+    warning: '#eab308',               // Giallo oro luna
+    danger: '#ef4444',
+    accent: '#3b82f6',                // Blu elettrico
+    glow: '#67e8f9',                  // Cyan glow per fuochi
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
-    sans: 'normal',
+    sans: 'System',
     serif: 'serif',
-    rounded: 'normal',
+    rounded: 'System',
     mono: 'monospace',
   },
   web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+    rounded: "'SF Pro Rounded', system-ui, sans-serif",
+    mono: "SFMono-Regular, Menlo, Monaco, monospace",
   },
 });
